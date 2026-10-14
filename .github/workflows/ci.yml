@@ -1,0 +1,46 @@
+name: Test and publish application
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      COMPOSE_PROJECT_NAME: taskist-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      APP_IMAGE: taskist-ci:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and start isolated test stack
+        run: docker compose --env-file environments/dev.env.example up -d --build --wait
+      - name: Test validation and API
+        run: |
+          docker compose --env-file environments/dev.env.example exec -T app node --test api/validation.test.js
+          docker compose --env-file environments/dev.env.example exec -T app node --input-type=module < scripts/smoke-test.mjs
+      - name: Publish tested image to GitHub Container Registry
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          registry_image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker tag "$APP_IMAGE" "$registry_image:$GITHUB_SHA"
+          docker push "$registry_image:$GITHUB_SHA"
+          image_digest=$(docker image inspect --format='{{index .RepoDigests 0}}' "$registry_image:$GITHUB_SHA")
+          printf '### Tested application image\n\n`%s`\n\nPromote this digest to stage and production. Architecture: linux/amd64.\n' "$image_digest" >> "$GITHUB_STEP_SUMMARY"
+      - name: Logs on failure
+        if: failure()
+        run: docker compose --env-file environments/dev.env.example logs --tail 100
+      - name: Remove disposable CI stack
+        if: always()
+        run: docker compose --env-file environments/dev.env.example down --volumes
+      - name: Log out of registry
+        if: always()
+        run: docker logout ghcr.io

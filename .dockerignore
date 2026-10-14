@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+web/dist
+.git
+environments
+README.md
+.env
+.env.*
+*.pem
+*.key
+*.dump
+*.sql.gz
+backups
+.github

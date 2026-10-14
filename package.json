@@ -1,0 +1,13 @@
+{
+  "name": "docker-lab",
+  "private": true,
+  "workspaces": [
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace web",
+    "start": "npm start --workspace api",
+    "test": "node --test api/validation.test.js"
+  }
+}

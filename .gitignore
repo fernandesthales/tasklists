@@ -1,0 +1,11 @@
+node_modules/
+web/dist/
+environments/*.env
+.DS_Store
+.env
+.env.*
+*.pem
+*.key
+*.dump
+*.sql.gz
+backups/
