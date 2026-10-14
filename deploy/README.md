@@ -1,6 +1,6 @@
 # Deployment preparation
 
-Deployment is not yet configured on GitHub or Hostinger. These files prepare the build and backup steps without assuming SSH access, repository ownership, or available domain names.
+The private dev workspace is deployed on Hostinger. See [DEPLOYED.md](DEPLOYED.md) for verified status, paths, access, and rollback. This document describes the build and backup tooling; automated deployment is not yet configured.
 
 ## GitHub
 
